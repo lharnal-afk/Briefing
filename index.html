@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Briefing</title>
+<meta name="theme-color" content="#10213d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9edf1;--card:#fff;--ink:#101828;--muted:#5b6676;--line:#d5dbe3;--ai:#5b4bdb;--wars:#b3261e;--world:#0a7b83;--india:#b85a0b}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1319;--card:#171e27;--ink:#e8ecf1;--muted:#93a0b1;--line:#27313d;--ai:#9a8cff;--wars:#ff7a70;--world:#4fc3cb;--india:#ffa94d}}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg)}
+body{font:16px/1.4 "Public Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg);padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:baseline;justify-content:space-between}
+h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+#upd{font-size:13px;color:var(--muted)}
+#refresh{border:0;background:none;color:var(--ink);font:600 14px inherit;padding:6px 0 6px 12px}
+.kinds{display:flex;gap:8px;margin-top:10px}
+.kinds button{border:1px solid var(--line);background:none;color:var(--muted);font:600 13px inherit;padding:6px 14px;border-radius:99px}
+.kinds button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main{padding:12px 16px;display:grid;gap:12px;max-width:640px;margin:0 auto}
+.card{display:block;color:inherit;text-decoration:none;background:var(--card);border-radius:10px;overflow:hidden}
+.article{border-left:5px solid var(--c);padding:12px 14px}
+.c-ai{--c:var(--ai)}.c-wars{--c:var(--wars)}.c-world{--c:var(--world)}.c-india{--c:var(--india)}
+.thumb{position:relative;aspect-ratio:16/9;background:#000}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.play{position:absolute;inset:0;margin:auto;width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.6)}
+.play::after{content:"";position:absolute;left:21px;top:15px;border:11px solid transparent;border-left:17px solid #fff}
+.video .body{padding:10px 14px 12px;border-top:4px solid var(--c)}
+.meta{display:flex;gap:10px;font-size:13px;color:var(--muted);margin-bottom:4px}
+.meta b{color:var(--c);font-weight:600}
+.title{font-weight:600;font-size:17px;line-height:1.3}
+.sum{font-size:14px;color:var(--muted);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note{padding:40px 8px;text-align:center;color:var(--muted)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--muted);font:600 13px inherit;padding:16px 0;border-top:3px solid transparent;margin-top:-1px}
+nav button.on{color:var(--ink);border-top-color:var(--t,var(--ink))}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Briefing</h1><div><span id="upd"></span><button id="refresh">Refresh</button></div></div>
+  <div class="kinds" id="kinds"></div>
+</header>
+<main id="list"></main>
+<nav id="tabs"></nav>
+<script>
+const TABS=[['all','All'],['ai','AI'],['wars','Wars'],['world','World'],['india','India']],KINDS=[['all','Everything'],['article','Articles'],['video','Videos']];
+const LABEL={ai:'AI',wars:'Wars',world:'World',india:'India'};
+let data={items:[]},tab='all',kind='all';
+const $=s=>document.querySelector(s);
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function ago(iso){const m=Math.max(1,Math.round((Date.now()-new Date(iso))/6e4));if(m<60)return m+' min ago';const h=Math.round(m/60);return h<24?h+' h ago':Math.round(h/24)+' d ago'}
+function card(i){
+  const a=el('a','card '+i.type+' c-'+i.category);a.href=i.url;a.target='_blank';a.rel='noopener';
+  if(i.type==='video'){const t=el('div','thumb'),im=el('img');im.src=i.thumb;im.alt='';im.loading='lazy';t.append(im,el('span','play'));a.append(t)}
+  const b=el('div','body'),m=el('div','meta');
+  m.append(el('b',null,tab==='all'?LABEL[i.category]:i.source));
+  if(tab==='all')m.append(el('span',null,i.source));
+  m.append(el('span',null,ago(i.published)));
+  b.append(m,el('div','title',i.title));
+  if(i.summary)b.append(el('div','sum',i.summary));
+  a.append(b);return a}
+function chips(box,defs,get,set,cls){box.replaceChildren(...defs.map(([k,l])=>{
+  const b=el('button',get()===k?'on':'',l);if(cls&&k!=='all')b.style.setProperty('--t','var(--'+k+')');
+  b.onclick=()=>{set(k);render()};return b}))}
+function render(){
+  chips($('#tabs'),TABS,()=>tab,k=>tab=k,true);chips($('#kinds'),KINDS,()=>kind,k=>kind=k);
+  const L=data.items.filter(i=>(tab==='all'||i.category===tab)&&(kind==='all'||i.type===kind));
+  $('#list').replaceChildren(...(L.length?L.map(card):[el('p','note',data.error||'Nothing here yet. Check back after the next update.')]));
+  $('#upd').textContent=data.updated?'Updated '+ago(data.updated):''}
+async function load(){
+  try{const r=await fetch('news.json',{cache:'no-store'});if(!r.ok)throw 0;data=await r.json()}
+  catch{data.error='news.json could not be loaded. Run the collector once (see README).'}
+  render()}
+$('#refresh').onclick=load;
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+let y0=null;addEventListener('touchstart',e=>{y0=scrollY===0?e.touches[0].clientY:null},{passive:true});
+addEventListener('touchend',e=>{if(y0!==null&&e.changedTouches[0].clientY-y0>100)load();y0=null});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+load();
+</script>
+</body>
+</html>
